@@ -1,15 +1,30 @@
-'use strict'
+import React,{Component} from 'react'
+import {View,Text} from 'react-native'
+import axios from 'axios'
 
-import React,{Component,View,Text} from 'react-native'
+class DashboardView extends Component{
+    constructor(props){
+        super(props)
+        this.state = {
+          Usuarios:[]
+        }
+    }
 
-class dashboardView extends Component{
+    componentDidMount(){
+        axios.get('https://lectorqr-devf.herokuapp.com/users')
+          .then(response => {
+            this.setState({
+              Usuarios:response.data
+            })
+          })
+          .catch(err => console.log(err))
+    }
+
     render(){
         return(
-            <View>
-                <Text>Soy el Componente dashboardView</Text>
-            </View>
+                <Text>{this.state.Usuarios.lenght}</Text>
         )
     }
 }
 
-module.exports = dashboardView
+export default DashboardView

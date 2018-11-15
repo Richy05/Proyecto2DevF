@@ -40,7 +40,7 @@ app.post('/users',(req,res)=>{
     })
     newUser.save((err,newuser)=>{
         err
-        ? res.status(409).send(err)
+        ? res.status(409).send('Usuario ya registrado')
         : res.status(201).send(newuser)
     }) 
 })

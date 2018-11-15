@@ -20,7 +20,7 @@ class RegisterView extends Component {
             alert('Usuario guardado')
         })
         .catch(err => {
-            alert('Tuvimos un error, intenta de nuevo')
+            alert('Intenta de nuevo')
         })
 
   }

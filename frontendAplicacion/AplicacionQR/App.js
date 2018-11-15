@@ -11,9 +11,14 @@ import {
   TextInput,
   TouchableOpacity, 
   Image,
+  Linking, 
+  Dimensions, 
+  LayoutAnimation,
 } from 'react-native';
 import { createStackNavigator, createSwitchNavigator } from 'react-navigation';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import { BarCodeScanner, Permissions } from 'expo';
+import Icon from 'react-native-vector-icons/FontAwesome'
 import axios from 'axios'
 
 class SignInScreen extends React.Component {
@@ -29,34 +34,35 @@ class SignInScreen extends React.Component {
 
         let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
         if(this.state.userName === '')
-            alert('Introduce tu correo')
+            Alert.alert('Awkward','Introduce tu correo')
         else if(reg.test(this.state.userName) === false){
             this.setState({userName:e})
-            alert('Introduce un correo valido')
+            Alert.alert('Awkward','Introduce un correo valido')
             return false;
         }
         else{
             this.setState({userName:e})
             axios.post('https://lectorqr-devf.herokuapp.com/users',json)
                 .then(() => {
-                    alert('Registro con exito')
+                    Alert.alert('Awkward','Registro con exito')
                 })
                 .catch(err => {
-                    alert('Correo ya registrado')
+                    Alert.alert('Awkward','Correo ya registrado')
                 })
-            }
-    
+            }   
       }
+
+
 
     _signInAsync = async (e) => {
     e.preventDefault()
 
     let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
     if(this.state.userName === '')
-        alert('Introduce tu correo')
+        Alert.alert('Awkward','Introduce tu correo')
     else if(reg.test(this.state.userName) === false){
         this.setState({userName:e})
-        alert('Introduce un correo valido')
+        Alert.alert('Awkward','Introduce un correo valido')
         return false;
     }
     else{
@@ -64,13 +70,16 @@ class SignInScreen extends React.Component {
         axios.get(`https://lectorqr-devf.herokuapp.com/users/${this.state.userName}`)
             .then(res => {
                 if(res.data === '')
-                    alert('Usuario no registrado')
+                    Alert.alert(
+                      'Awkward',
+                      'Usuario no registrado'
+                    )
                 else{
                     this.props.navigation.navigate('App');
                 }
             })
             .catch(err => {
-                alert(
+                Alert.alert(
                     'Awkward',
                     'Usuario no registrado'
                 )
@@ -109,14 +118,16 @@ class SignInScreen extends React.Component {
 
 class HomeScreen extends React.Component {
   static navigationOptions = {
-    title: 'Bienvenido a Awkward',
+    title: `Bienvenido a Awkward `,
   };
 
   render() {
     return (
       <View style={styles.container}>
-        <Button title="Show me more of the app" onPress={this._showMoreApp} />
-        <Button title="Actually, sign me out :)" onPress={this._signOutAsync} />
+        <TouchableOpacity style={styles.ButtonIcon} onPress={this._showMoreApp} >
+          <Icon name={'chevron-right'} size={30} color='#01a699'/>
+        </TouchableOpacity>
+        <Button title="Salir" onPress={this._signOutAsync} />
       </View>
     );
   }
@@ -133,22 +144,109 @@ class HomeScreen extends React.Component {
 
 class OtherScreen extends React.Component {
   static navigationOptions = {
-    title: 'Lots of features here',
+    title: 'Comparte en Twitter',
+  };
+
+  state = {
+    hasCameraPermission: null,
+    lastScannedUrl: null,
+  };
+
+  componentDidMount() {
+    this._requestCameraPermission();
+  }
+
+  _requestCameraPermission = async () => {
+    const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    this.setState({
+      hasCameraPermission: status === 'granted',
+    });
+  };
+
+  _handleBarCodeRead = result => {
+    if (result.data !== this.state.lastScannedUrl) {
+      LayoutAnimation.spring();
+      this.setState({ lastScannedUrl: result.data });
+    }
   };
 
   render() {
     return (
-      <View style={styles.container}>
-        <Button title="I'm done, sign me out" onPress={this._signOutAsync} />
-        <StatusBar barStyle="default" />
+      // <View style={styles.container}>
+      //   <Button title="I'm done, sign me out" onPress={this._signOutAsync} />
+      //   <StatusBar barStyle="default" />
+      // </View>
+
+      <View style={styles.containerCamera}>
+
+      {this.state.hasCameraPermission === null
+        ? <Text>Requesting for camera permission</Text>
+        : this.state.hasCameraPermission === false
+            ? <Text style={{ color: '#fff' }}>
+                Camera permission is not granted
+              </Text>
+            : <BarCodeScanner
+                onBarCodeRead={this._handleBarCodeRead}
+                style={{
+                  height: Dimensions.get('window').height,
+                  width: Dimensions.get('window').width,
+                }}
+              />}
+
+      {this._maybeRenderUrl()}
+
+      <StatusBar hidden />
       </View>
     );
   }
+  
 
-  _signOutAsync = async () => {
-    await AsyncStorage.clear();
-    this.props.navigation.navigate('Auth');
+  _handlePressUrl = () => {
+    Alert.alert(
+      '¿Compartir esto?',
+      this.state.lastScannedUrl,
+      [
+        {
+          text: 'Si',
+          onPress: () => Linking.openURL(`http://twitter.com/share?text=${this.state.lastScannedUrl}&hashtags=Awkward,ImAwkwardToo`),
+        },
+        { text: 'No', onPress: () => {} },
+      ],
+      { cancellable: false }
+    );
   };
+
+  _handlePressCancel = () => {
+    this.setState({ lastScannedUrl: null });
+  };
+
+  _maybeRenderUrl = () => {
+    if (!this.state.lastScannedUrl) {
+      return;
+    }
+
+    return (
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.url} onPress={this._handlePressUrl}>
+          <Text numberOfLines={1} style={styles.urlText}>
+            Compartir
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={this._handlePressCancel}>
+          <Text style={styles.cancelButtonText}>
+            Cancelar
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // _signOutAsync = async () => {
+  //   await AsyncStorage.clear();
+  //   this.props.navigation.navigate('Auth');
+  // };
 }
 
 class AuthLoadingScreen extends React.Component {
@@ -181,6 +279,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  containerCamera: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
   },
   image:{
     width:320,
@@ -221,6 +325,43 @@ const styles = StyleSheet.create({
  submitButtonText:{
     color: 'white',
  },
+ bottomBar: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  padding: 15,
+  flexDirection: 'row',
+},
+url: {
+  flex: 1,
+},
+urlText: {
+  color: '#fff',
+  fontSize: 20,
+},
+cancelButton: {
+  marginLeft: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+cancelButtonText: {
+  color: 'rgba(255,255,255,0.8)',
+  fontSize: 18,
+},
+ButtonIcon:{
+  borderWidth:1,
+  borderColor:'rgba(0,0,0,0.2)',
+  alignItems:'center',
+  justifyContent:'center',
+  width:100,
+  height:100,
+  backgroundColor:'white',
+  borderRadius:100,
+  marginTop:250,
+  marginLeft:150,
+}
 });
 
 const AppStack = createStackNavigator({ Home: HomeScreen, Other: OtherScreen });

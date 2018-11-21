@@ -1,8 +1,7 @@
-import React from 'react';
+import React,{Component} from 'react';
 import {
   ActivityIndicator,
   AsyncStorage,
-  Button,
   StatusBar,
   StyleSheet,
   View,
@@ -21,113 +20,145 @@ import { BarCodeScanner, Permissions } from 'expo';
 import Icon from 'react-native-vector-icons/FontAwesome'
 import axios from 'axios'
 
-class SignInScreen extends React.Component {
-    state = {
-        userName:'',
-    }
+const ACCESS_TOKEN = '_id'
 
-    onSubmitHandle = (e) => {
-        e.preventDefault()
-        const json = {
-            userName:this.state.userName,
-        }
+class SignInScreen extends Component {
+  constructor(){
+    super()
 
-        let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
-        if(this.state.userName === '')
-            Alert.alert('Awkward','Introduce tu correo')
-        else if(reg.test(this.state.userName) === false){
-            this.setState({userName:e})
-            Alert.alert('Awkward','Introduce un correo valido')
-            return false;
-        }
-        else{
-            this.setState({userName:e})
-            axios.post('https://lectorqr-devf.herokuapp.com/users',json)
-                .then(() => {
-                    Alert.alert('Awkward','Registro con exito')
-                })
-                .catch(err => {
-                    Alert.alert('Awkward','Correo ya registrado')
-                })
-            }   
-      }
-
-
-
-    _signInAsync = async (e) => {
-    e.preventDefault()
-
-    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
-    if(this.state.userName === '')
-        Alert.alert('Awkward','Introduce tu correo')
-    else if(reg.test(this.state.userName) === false){
-        this.setState({userName:e})
-        Alert.alert('Awkward','Introduce un correo valido')
-        return false;
-    }
-    else{
-        this.setState({userName:e})
-        axios.get(`https://lectorqr-devf.herokuapp.com/users/${this.state.userName}`)
-            .then(res => {
-                if(res.data === '')
-                    Alert.alert(
-                      'Awkward',
-                      'Usuario no registrado'
-                    )
-                else{
-                    this.props.navigation.navigate('App');
-                }
-            })
-            .catch(err => {
-                Alert.alert(
-                    'Awkward',
-                    'Usuario no registrado'
-                )
-            })
-            await AsyncStorage.setItem(`${this.state.userName}`, 'abc');
-            
+    this.state = {
+      userName:''
     }
   }
 
-   handleUser = (text) => {
-      this.setState({ userName: text })
-   }
+  storeToken = async(accessToken) => {
+    try{
+      await AsyncStorage.setItem(ACCESS_TOKEN,accessToken)
+    }catch(err){
+      console.log('Algo anda mal')
+    }
+  }
+
+  /*-------------------------------------------------Boton Regitro-----------------------------------------------*/
+  onSubmitHandle = (e) => {
+    e.preventDefault()
+    const json = {
+      userName:this.state.userName,
+    }
+
+    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
+
+    if(this.state.userName === '')
+      Alert.alert('Awkward','Introduce tu correo')
+    else if(reg.test(this.state.userName) === false)
+      Alert.alert('Awkward','Introduce un correo valido')
+    else{
+      this.setState({userName:e})
+      
+      axios.post('https://lectorqr-devf.herokuapp.com/users',json)
+        .then(() => {
+          Alert.alert('Awkward','Registro con exito')
+        })
+        .catch(err => {
+          Alert.alert('Awkward','Correo ya registrado')
+        })
+    }   
+  }
+
+  /*-----------------------------------------------Boton Entrar-----------------------------------------------------*/
+  _signInAsync = async (e) => {
+    e.preventDefault()
+
+    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
+
+    if(this.state.userName === '')
+        Alert.alert('Awkward','Introduce tu correo')
+    else if(reg.test(this.state.userName) === false)
+        Alert.alert('Awkward','Introduce un correo valido')
+    else{
+      axios.get(`https://lectorqr-devf.herokuapp.com/users/${this.state.userName}`)
+        .then(res => {
+          if(res.data === '')
+            Alert.alert(
+              'Awkward',
+              'Usuario no registrado'
+            )
+          else{
+            let accessToken = res.data.userName;
+            this.storeToken(accessToken)
+            this.props.navigation.navigate('App');
+          }
+        })
+        .catch(err => {
+          Alert.alert(
+            'Awkward',
+            'Usuario no registrado'
+          )
+        })     
+    }
+  }
+
+  handleUser = (text) => {
+    this.setState({ userName: text })
+  }
 
   render() {
     return (
-    //     <Button title="Sign in!" onPress={this._signInAsync} />
       <KeyboardAwareScrollView style = {styles.container}>
-      <View >
-         <Image source={require('./assets/Logo.png')} resizeMode="stretch" style={styles.image}></Image>
-         <Image source={require('./assets/TED.png')} resizeMode="stretch" style={styles.image2}></Image>
-         <TextInput style = {styles.input}
-            placeholder = "Introduce tu correo"
-            placeholderTextColor = "grey"
-            onChangeText = {this.handleUser}/>
-         <TouchableOpacity
-            style = {styles.LogInButton}
-            onPress = {this._signInAsync}>
-            <Text style = {styles.submitButtonText}> Entrar </Text>
-         </TouchableOpacity>
-         <TouchableOpacity style={styles.RegisterButton} onPress={this.onSubmitHandle}><Text>Registrarse</Text></TouchableOpacity>
-      </View>
+        <View >
+          <Image source={require('./assets/Logo.png')} resizeMode="stretch" style={styles.image}></Image>
+          <Image source={require('./assets/TED.png')} resizeMode="stretch" style={styles.image2}></Image>
+          <TextInput style = {styles.input}
+              placeholder = "Introduce tu correo"
+              placeholderTextColor = "grey"
+              onChangeText = {this.handleUser}/>
+          <TouchableOpacity
+              style = {styles.LogInButton}
+              onPress = {this._signInAsync}>
+              <Text style = {styles.submitButtonText}> Entrar </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.RegisterButton} onPress={this.onSubmitHandle}><Text>Registrarse</Text></TouchableOpacity>
+        </View>
       </KeyboardAwareScrollView>
     );
   }
 }
 
-class HomeScreen extends React.Component {
+class HomeScreen extends Component {
+  constructor(props){
+    super(props)
+
+    this.state = {
+      userName:''
+    }
+  }
+
+  getToken = async () =>{
+    try{
+      let token = await AsyncStorage.getItem(ACCESS_TOKEN)
+       this.setState({userName:token}) 
+    }catch(err){
+      console.log('Algo anda mal')
+    }
+  }
+
+  componentDidMount(){
+    this.getToken()
+  }
+
   static navigationOptions = {
-    title: `Bienvenido a Awkward `,
+    title: `Bienvenido a Awkward`,
   };
 
   render() {
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.ButtonIcon} onPress={this._showMoreApp} >
-          <Icon name={'chevron-right'} size={30} color='#01a699'/>
+          <Icon name={'camera'} size={30} color='#01a699'/>
         </TouchableOpacity>
-        <Button title="Salir" onPress={this._signOutAsync} />
+        <TouchableOpacity style={styles.signOut} onPress={this._signOutAsync} >
+          <Text style={{color:'red',fontSize:25}}>Salir</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -142,18 +173,47 @@ class HomeScreen extends React.Component {
   };
 }
 
-class OtherScreen extends React.Component {
+class OtherScreen extends Component {
+  constructor(props){
+    super(props)
+
+    this.state = {
+      userName:'',
+      hasCameraPermission: null,
+      lastScannedUrl: null,
+    }
+  }
+
+  onSubmitHandleC = () => {
+    const json = {
+      codigos:[{QR:this.state.lastScannedUrl}]
+    } 
+    Linking.openURL(`http://twitter.com/share?text=${this.state.lastScannedUrl}&hashtags=Awkward,ImAwkwardToo`)
+
+      axios.post(`https://lectorqr-devf.herokuapp.com/users/qr/${this.state.userName}`,json)
+        .then(() => {
+        })
+        .catch(err => {
+
+        })  
+  }
+
+  getToken = async () =>{
+    try{
+      let token = await AsyncStorage.getItem(ACCESS_TOKEN)
+       this.setState({userName:token}) 
+    }catch(err){
+      console.log('Algo anda mal')
+    }
+  }
+
   static navigationOptions = {
     title: 'Comparte en Twitter',
   };
 
-  state = {
-    hasCameraPermission: null,
-    lastScannedUrl: null,
-  };
-
   componentDidMount() {
     this._requestCameraPermission();
+    this.getToken()
   }
 
   _requestCameraPermission = async () => {
@@ -172,10 +232,6 @@ class OtherScreen extends React.Component {
 
   render() {
     return (
-      // <View style={styles.container}>
-      //   <Button title="I'm done, sign me out" onPress={this._signOutAsync} />
-      //   <StatusBar barStyle="default" />
-      // </View>
 
       <View style={styles.containerCamera}>
 
@@ -208,7 +264,8 @@ class OtherScreen extends React.Component {
       [
         {
           text: 'Si',
-          onPress: () => Linking.openURL(`http://twitter.com/share?text=${this.state.lastScannedUrl}&hashtags=Awkward,ImAwkwardToo`),
+          onPress: () => { this.onSubmitHandleC()
+        }
         },
         { text: 'No', onPress: () => {} },
       ],
@@ -242,14 +299,9 @@ class OtherScreen extends React.Component {
       </View>
     );
   };
-
-  // _signOutAsync = async () => {
-  //   await AsyncStorage.clear();
-  //   this.props.navigation.navigate('Auth');
-  // };
 }
 
-class AuthLoadingScreen extends React.Component {
+class AuthLoadingScreen extends Component {
   constructor() {
     super();
     this._bootstrapAsync();
@@ -359,9 +411,14 @@ ButtonIcon:{
   height:100,
   backgroundColor:'white',
   borderRadius:100,
-  marginTop:250,
-  marginLeft:150,
-}
+  marginTop:220,
+  marginLeft:130,
+},
+signOut:{
+  marginTop:200,
+  marginLeft:50,
+},
+
 });
 
 const AppStack = createStackNavigator({ Home: HomeScreen, Other: OtherScreen });

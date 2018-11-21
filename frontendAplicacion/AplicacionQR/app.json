@@ -21,7 +21,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "R.DevF.exp.exponent"
+    },
+    "android": {
+      "package": "DevF.exp.exponent"
     }
   }
 }

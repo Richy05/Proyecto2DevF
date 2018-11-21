@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const URL = 'mongodb://prueba:d123456789@ds125016.mlab.com:25016/curso-devf'
+const URL = 'mongodb://prueba:<PASSWORD>@ds125016.mlab.com:25016/curso-devf'
 mongoose.connect(URL,{useNewUrlParser:true},()=>{
     console.log('Conexion exitosa a la base de datos')
 })
